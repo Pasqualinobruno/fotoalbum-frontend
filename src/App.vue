@@ -13,20 +13,22 @@ export default {
     return {
       base_api_url: 'http://127.0.0.1:8000',
       photo_endpoint: '/api/photographys',
+      category_endpoint: '/api/categories',
       photographys: null,
+      categories: [],
       search_text: '',
       inEvidence: false,
+      selected_category: '',
     };
   },
   methods: {
-    go(url) {
-      console.log(url);
-      this.callApi(url); // Chiamata API per caricare la pagina selezionata
-    },
     search() {
       let url = `${this.base_api_url}${this.photo_endpoint}?search=${this.search_text}`;
       if (this.inEvidence) {
         url += `&inEvidence=true`;
+      }
+      if (this.selected_category) {
+        url += `&category=${this.selected_category}`;
       }
       console.log(url);
       this.callApi(url);
@@ -36,24 +38,33 @@ export default {
         .get(url)
         .then(resp => {
           console.log(resp);
-          this.photographys = resp.data.results.data; // Dati della pagina corrente
-          this.pagination = resp.data.results; // Informazioni sulla paginazione
-
-          // Esempio di come estrarre informazioni dalla paginazione
-          this.currentPage = resp.data.results.current_page;
-          this.lastPage = resp.data.results.last_page;
-          this.total = resp.data.results.total;
+          this.photographys = resp.data.results.data;
+          this.pagination = resp.data.results;
         })
         .catch(err => {
           console.error(err);
-          // Gestire l'errore, ad esempio mostrando un messaggio all'utente
         });
+    },
+    fetchCategories() {
+      axios
+        .get(`${this.base_api_url}${this.category_endpoint}`)
+        .then(resp => {
+          this.categories = resp.data;
+        })
+        .catch(err => {
+          console.error(err);
+        });
+    },
+    go(url) {
+      console.log(url);
+      this.callApi(url);
     }
   },
   mounted() {
     const url = `${this.base_api_url}${this.photo_endpoint}`;
     console.log(url);
     this.callApi(url);
+    this.fetchCategories();
   }
 };
 </script>
@@ -64,6 +75,14 @@ export default {
     <section class="photo" v-if="photographys !== null">
       <div class="container">
         <form @submit.prevent="search()">
+          <div class="input-group mb-3">
+            <select class="form-select" v-model="selected_category">
+              <option value="">Tutte le categorie</option>
+              <option v-for="category in categories.results" :key="category.id" :value="category.id">
+                {{ category.name }}
+              </option>
+            </select>
+          </div>
           <div class="input-group mb-3">
             <div class="form-check form-check-inline ml-3">
               <input class="form-check-input" type="checkbox" id="inEvidence" v-model="inEvidence">
@@ -114,7 +133,6 @@ export default {
       </div>
     </section>
     <div class="container">
-      <!-- controlla se pagination esiste e se fosse maggiore di 1  -->
       <nav aria-label="Page navigation" class="mt-4 col-1" v-if="pagination && pagination.last_page > 1">
         <ul class="pagination">
           <li class="page-item" :class="{ 'disabled': !pagination.prev_page_url }">
@@ -122,7 +140,6 @@ export default {
               <span aria-hidden="true">&laquo;</span>
             </button>
           </li>
-          <!-- questo ciclo mi stampa stamp i button con all'interno il numero di pagina ed associa ad ognuno di esso un url che passa alla funzione go che richiamo la callApi in piu se il numero della pagina fosse uguale alla pagina corrente aggiunge la classe active -->
           <li v-for="page in pagination.last_page" :key="page" class="page-item"
             :class="{ 'active': page === pagination.current_page }">
             <button class="page-link" type="button"
