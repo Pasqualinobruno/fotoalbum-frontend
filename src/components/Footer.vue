@@ -5,8 +5,9 @@ export default {
 </script>
 <template>
     <footer>
-        <div class="container">
-            <h2>Footer</h2>
+        <div class="container text-center">
+            <h2>Paki Photographer</h2>
+            <p>Nocera Inferiore SA, Via xxxxx nY</p>
         </div>
     </footer>
 </template>

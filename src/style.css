@@ -74,7 +74,9 @@ footer {
   display: flex;
   justify-items: center;
 
-  background: transparent &img {
+  background: transparent;
+
+  &img {
     width: 300px;
     height: 200px;
   }
@@ -83,4 +85,9 @@ footer {
 .photo {
   background-color: rgba(129, 125, 125, 0.212);
   padding: 1rem;
+}
+
+.input-group .form-control {
+  flex: 1 1 auto;
+  width: 80%;
 }

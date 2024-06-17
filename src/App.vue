@@ -1,67 +1,142 @@
 <script>
 import axios from 'axios';
 import Footer from './components/Footer.vue';
-
 import Header from './components/Header.vue';
-
 
 export default {
   name: 'App',
   components: {
     Header,
     Footer,
-
   },
   data() {
     return {
       base_api_url: 'http://127.0.0.1:8000',
       photo_endpoint: '/api/photographys',
-      photographys: null
+      photographys: null,
+      search_text: '',
+      inEvidence: false,
     };
   },
+  methods: {
+    go(url) {
+      console.log(url);
+      this.callApi(url); // Chiamata API per caricare la pagina selezionata
+    },
+    search() {
+      let url = `${this.base_api_url}${this.photo_endpoint}?search=${this.search_text}`;
+      if (this.inEvidence) {
+        url += `&inEvidence=true`;
+      }
+      console.log(url);
+      this.callApi(url);
+    },
+    callApi(url) {
+      axios
+        .get(url)
+        .then(resp => {
+          console.log(resp);
+          this.photographys = resp.data.results.data; // Dati della pagina corrente
+          this.pagination = resp.data.results; // Informazioni sulla paginazione
+
+          // Esempio di come estrarre informazioni dalla paginazione
+          this.currentPage = resp.data.results.current_page;
+          this.lastPage = resp.data.results.last_page;
+          this.total = resp.data.results.total;
+        })
+        .catch(err => {
+          console.error(err);
+          // Gestire l'errore, ad esempio mostrando un messaggio all'utente
+        });
+    }
+  },
   mounted() {
-    const url = this.base_api_url + this.photo_endpoint;
+    const url = `${this.base_api_url}${this.photo_endpoint}`;
     console.log(url);
-    axios
-      .get(url).
-      then(resp => {
-        console.log(resp);
-        this.photographys = resp.data.results.data;
-      })
-      .catch(err => {
-        console.error(err);
-      })
+    this.callApi(url);
   }
 };
-
 </script>
 
 <template>
   <Header></Header>
   <main>
-    <section class="photo" v-if="photographys">
+    <section class="photo" v-if="photographys !== null">
       <div class="container">
+        <form @submit.prevent="search()">
+          <div class="input-group mb-3">
+            <div class="form-check form-check-inline ml-3">
+              <input class="form-check-input" type="checkbox" id="inEvidence" v-model="inEvidence">
+              <label class="form-check-label" for="inEvidence">In evidenza</label>
+            </div>
+            <input type="search" class="form-control" placeholder="search..." v-model="search_text">
+            <button class="btn btn-outline-dark" type="submit">
+              <i class="fas fa-search fa-lg fa-fw"></i>
+            </button>
+          </div>
+        </form>
         <div class="row">
-          <div class="col-12" v-for="photo in photographys" :key="photo.id">
-            <div class="card shadow rounded-4">
-              <div class="card-body">
-                {{ photo.name }}
-              </div>
-              <div class="card-img-top">
-                <section v-if="photo.image.startsWith('https://')">
-                  <img :src="photo.image" alt="photo" class="img-fluid">
-                </section>
-                <section v-else>
-                  <img :src="base_api_url + '/storage/' + photo.image" alt="photo" class="img-fluid">
-                </section>
+          <section v-if="photographys === null">
+            <div class="col-12">
+              <h2>Caricamento in corso...</h2>
+            </div>
+          </section>
+          <section v-else-if="photographys.length === 0">
+            <div class="col-12">
+              <h2>Non ci sono risultati</h2>
+            </div>
+          </section>
+          <section v-else>
+            <div class="col-12" v-for="photo in photographys" :key="photo.id">
+              <div class="card shadow rounded-4">
+                <div class="card-body">
+                  {{ photo.name }}
+                </div>
+                <div class="card-img-top">
+                  <section v-if="photo.image.startsWith('https://')">
+                    <img :src="photo.image" alt="photo" class="img-fluid">
+                  </section>
+                  <section v-else>
+                    <img :src="base_api_url + '/storage/' + photo.image" alt="photo" class="img-fluid">
+                  </section>
+                </div>
               </div>
             </div>
-          </div>
+          </section>
         </div>
       </div>
     </section>
+    <section v-else>
+      <div class="container">
+        <div class="col-12">
+          <h2>Non ci sono risultati</h2>
+        </div>
+      </div>
+    </section>
+    <div class="container">
+      <!-- controlla se pagination esiste e se fosse maggiore di 1  -->
+      <nav aria-label="Page navigation" class="mt-4 col-1" v-if="pagination && pagination.last_page > 1">
+        <ul class="pagination">
+          <li class="page-item" :class="{ 'disabled': !pagination.prev_page_url }">
+            <button class="page-link" type="button" @click="go(pagination.prev_page_url)" aria-label="Previous">
+              <span aria-hidden="true">&laquo;</span>
+            </button>
+          </li>
+          <!-- questo ciclo mi stampa stamp i button con all'interno il numero di pagina ed associa ad ognuno di esso un url che passa alla funzione go che richiamo la callApi in piu se il numero della pagina fosse uguale alla pagina corrente aggiunge la classe active -->
+          <li v-for="page in pagination.last_page" :key="page" class="page-item"
+            :class="{ 'active': page === pagination.current_page }">
+            <button class="page-link" type="button"
+              @click="go(`${base_api_url}${photo_endpoint}?page=${page}&search=${search_text}${inEvidence ? '&inEvidence=true' : ''}`)">{{
+      page }}</button>
+          </li>
+          <li class="page-item" :class="{ 'disabled': !pagination.next_page_url }">
+            <button class="page-link" type="button" @click="go(pagination.next_page_url)" aria-label="Next">
+              <span aria-hidden="true">&raquo;</span>
+            </button>
+          </li>
+        </ul>
+      </nav>
+    </div>
   </main>
   <Footer></Footer>
 </template>
-
-<style></style>
