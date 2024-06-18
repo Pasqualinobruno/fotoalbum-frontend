@@ -19,16 +19,22 @@ export default {
       search_text: '',
       inEvidence: false,
       selected_category: '',
+      pagination: {
+        current_page: 1,
+        last_page: 1,
+        prev_page_url: null,
+        next_page_url: null,
+      },
     };
   },
   methods: {
     search() {
-      let url = `${this.base_api_url}${this.photo_endpoint}?search=${this.search_text}`;
+      let url = `${this.base_api_url}${this.photo_endpoint}?search=${this.search_text}`; //http://127.0.0.1:8000/api/photographys?search= testo cercato nel search
       if (this.inEvidence) {
-        url += `&inEvidence=true`;
+        url += `&inEvidence=true`; //+=&inEvidence=true
       }
       if (this.selected_category) {
-        url += `&category=${this.selected_category}`;
+        url += `&category=${this.selected_category}`; //&category= piu la categoria selezionata
       }
       console.log(url);
       this.callApi(url);
@@ -38,8 +44,8 @@ export default {
         .get(url)
         .then(resp => {
           console.log(resp);
-          this.photographys = resp.data.results.data;
-          this.pagination = resp.data.results;
+          this.photographys = resp.data.results.data; //dati photo
+          this.pagination = resp.data.results; //dati paginazione
         })
         .catch(err => {
           console.error(err);
@@ -61,7 +67,7 @@ export default {
     }
   },
   mounted() {
-    const url = `${this.base_api_url}${this.photo_endpoint}`;
+    const url = `${this.base_api_url}${this.photo_endpoint}`; //http://127.0.0.1:8000/api/photographys
     console.log(url);
     this.callApi(url);
     this.fetchCategories();
